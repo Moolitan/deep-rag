@@ -126,6 +126,20 @@ cp .env.example .env
 - ✅ 启动前端开发服务器 (http://localhost:5173)
 - ✅ 自动打开浏览器
 
+### 仅用后端（无需前端）
+
+不启动前端也可以使用，只跑后端即可：
+
+```bash
+./start-backend-only.sh
+```
+
+然后可以：
+- 在浏览器打开 **http://localhost:8000/docs** 使用 Swagger 调试接口；
+- 或在本机终端运行 **`python cli_chat.py`** 进行多轮对话（需在项目根目录且已激活 venv）。
+
+对话接口：`POST /chat`，流式响应为 SSE。
+
 ### 手动启动（备选）
 
 **后端：**

@@ -1,4 +1,7 @@
 #!/bin/bash
+# 使用 Conda 环境（如 rag_ccf）时，在运行前设置：
+#   export DEEP_RAG_CONDA_ENV=rag_ccf
+# 或：DEEP_RAG_CONDA_ENV=rag_ccf ./start.sh
 
 set -e
 
@@ -35,7 +38,9 @@ fi
 if [ "$SKIP_INSTALL" = false ]; then
     echo "📦 Checking Backend Dependencies..."
     cd "$PROJECT_DIR"
-    if [ ! -d "venv" ]; then
+    if [ -n "$DEEP_RAG_CONDA_ENV" ]; then
+        echo "   Using Conda environment: $DEEP_RAG_CONDA_ENV (skip venv)"
+    elif [ ! -d "venv" ]; then
         echo "   Creating Python virtual environment..."
         python3 -m venv venv
         source venv/bin/activate
@@ -59,7 +64,20 @@ fi
 
 echo "🔧 Starting Backend Server..."
 cd "$PROJECT_DIR"
-source venv/bin/activate
+if [ -n "$DEEP_RAG_CONDA_ENV" ]; then
+    if [ -f "$(conda info --base 2>/dev/null)/etc/profile.d/conda.sh" ]; then
+        source "$(conda info --base)/etc/profile.d/conda.sh"
+        conda activate "$DEEP_RAG_CONDA_ENV"
+        echo "   Using Conda environment: $DEEP_RAG_CONDA_ENV"
+    else
+        echo "⚠️  DEEP_RAG_CONDA_ENV is set but conda not found. Please run:"
+        echo "   conda activate $DEEP_RAG_CONDA_ENV"
+        echo "   nohup python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 > backend.log 2>&1 &"
+        exit 1
+    fi
+else
+    source venv/bin/activate
+fi
 nohup python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 > backend.log 2>&1 &
 BACKEND_PID=$!
 echo "✅ Backend server started (PID: $BACKEND_PID, Port: 8000)"
@@ -111,6 +129,7 @@ echo "   Stop:    ./stop.sh"
 echo "   Restart: ./restart.sh         (fast mode by default)"
 echo "   Fast:    ./start.sh --fast    (skip dependency check)"
 echo "   Full:    ./restart.sh --full  (with dependency check)"
+echo "   Conda:  DEEP_RAG_CONDA_ENV=rag_ccf ./start.sh   (use conda env)"
 echo ""
 
 if command -v open > /dev/null; then
